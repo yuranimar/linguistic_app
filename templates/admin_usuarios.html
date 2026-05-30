@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestor Lingüístico — Gestión de Usuarios</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root { --bg:#0B0E13;--surface:#111620;--card:#161C28;--border:#1E2738;--text:#C8D3E8;--muted2:#5A6A8A;--header-bg:#0d1119; }
+    body.light { --bg:#F5F7FA;--surface:#FFFFFF;--card:#FFFFFF;--border:#E2E8F0;--text:#1A2035;--muted2:#64748B;--header-bg:#FFFFFF; }
+    body { background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;transition:background 0.25s,color 0.25s; }
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);}
+    body.light::before{display:none;}
+    .section-label{font-family:'Syne',sans-serif;font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted2);}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:background 0.25s;}
+    table th{font-family:'Syne',sans-serif;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted2);font-weight:600;padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap;}
+    table td{padding:10px 14px;border-bottom:1px solid var(--border);font-size:0.78rem;vertical-align:middle;color:var(--text);}
+    table tr:last-child td{border-bottom:none;}
+    table tr:hover td{background:rgba(240,165,0,0.03);}
+    .btn-aprobar{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:4px;font-size:0.72rem;font-family:'Syne',sans-serif;font-weight:600;border:none;cursor:pointer;background:#004D38;color:#00C48C;transition:filter 0.15s;}
+    .btn-aprobar:hover{filter:brightness(1.2);}
+    .btn-rechazar{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:4px;font-size:0.72rem;font-family:'Syne',sans-serif;font-weight:600;border:none;cursor:pointer;background:#5C1828;color:#FB7185;transition:filter 0.15s;}
+    .btn-rechazar:hover{filter:brightness(1.2);}
+    .status-badge{font-family:'DM Mono',monospace;font-size:0.65rem;letter-spacing:0.08em;text-transform:uppercase;padding:2px 8px;border-radius:2px;font-weight:500;}
+    .flash-error  {background:#5C1828;border:1px solid #FB7185;color:#FB7185;}
+    .flash-success{background:#004D38;border:1px solid #00C48C;color:#00C48C;}
+    .flash-info   {background:#0C3A52;border:1px solid #38BDF8;color:#38BDF8;}
+    .flash-warning{background:#7A5300;border:1px solid #F0A500;color:#F0A500;}
+    .theme-btn{display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:var(--card);color:var(--muted2);font-family:'DM Mono',monospace;font-size:0.7rem;cursor:pointer;transition:border-color 0.15s;}
+    .theme-btn:hover{border-color:#F0A500;color:#F0A500;}
+    .toggle-track{width:28px;height:15px;border-radius:99px;background:#2A3347;position:relative;transition:background 0.2s;flex-shrink:0;}
+    body.light .toggle-track{background:#F0A500;}
+    .toggle-thumb{position:absolute;top:2px;left:2px;width:11px;height:11px;border-radius:50%;background:#fff;transition:transform 0.2s;}
+    body.light .toggle-thumb{transform:translateX(13px);}
+    .live-dot{width:6px;height:6px;border-radius:50%;background:#00C48C;animation:pulse 2s infinite;}
+    .group-title{font-family:'Syne',sans-serif;font-size:0.75rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:10px 14px;border-bottom:1px solid var(--border);}
+    .empty-row td{text-align:center;padding:20px;color:var(--muted2);font-size:0.75rem;}
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header style="background:var(--header-bg);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="live-dot"></div>
+      <span style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:#C8D3E8;letter-spacing:-0.01em;">Gestor Lingüístico</span>
+      <span class="section-label" style="margin-left:4px;">/ Gestión de Usuarios</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="/" style="display:flex;align-items:center;gap:5px;font-size:0.75rem;color:var(--muted2);text-decoration:none;padding:4px 10px;border-radius:4px;border:1px solid var(--border);transition:border-color 0.15s;"
+        onmouseover="this.style.borderColor='#38BDF8';this.style.color='#38BDF8';"
+        onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted2)';">
+        <i data-lucide="layout-dashboard" style="width:12px;height:12px;"></i> Dashboard
+      </a>
+      <button onclick="toggleTema()" class="theme-btn">
+        <i id="tema-icon" data-lucide="moon" style="width:12px;height:12px;"></i>
+        <div class="toggle-track"><div class="toggle-thumb"></div></div>
+        <span id="tema-label">Claro</span>
+      </button>
+      <a href="/logout" style="display:flex;align-items:center;gap:5px;font-size:0.72rem;color:var(--muted2);text-decoration:none;padding:4px 10px;border-radius:4px;border:1px solid var(--border);transition:border-color 0.15s;"
+        onmouseover="this.style.borderColor='#FB7185';this.style.color='#FB7185';"
+        onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted2)';">
+        <i data-lucide="log-out" style="width:12px;height:12px;"></i> Salir
+      </a>
+    </div>
+  </header>
+
+  <main style="max-width:1000px;margin:0 auto;padding:2rem 1.5rem;">
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash-{{ category }}" style="padding:10px 14px;border-radius:6px;font-size:0.8rem;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+            <i data-lucide="{{ 'check-circle-2' if category == 'success' else 'info' }}" style="width:14px;height:14px;flex-shrink:0;"></i>
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- KPI resumen -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;">
+      <div class="card" style="padding:14px 18px;display:flex;align-items:center;gap:12px;">
+        <div style="padding:8px;background:#7A5300;border-radius:8px;"><i data-lucide="clock" style="width:16px;height:16px;color:#F0A500;"></i></div>
+        <div><div class="section-label">Pendientes</div><div style="font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:700;color:#F0A500;">{{ pendientes|length }}</div></div>
+      </div>
+      <div class="card" style="padding:14px 18px;display:flex;align-items:center;gap:12px;">
+        <div style="padding:8px;background:#004D38;border-radius:8px;"><i data-lucide="user-check" style="width:16px;height:16px;color:#00C48C;"></i></div>
+        <div><div class="section-label">Activos</div><div style="font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:700;color:#00C48C;">{{ activos|length }}</div></div>
+      </div>
+      <div class="card" style="padding:14px 18px;display:flex;align-items:center;gap:12px;">
+        <div style="padding:8px;background:#1E2738;border-radius:8px;"><i data-lucide="user-x" style="width:16px;height:16px;color:#5A6A8A;"></i></div>
+        <div><div class="section-label">Inactivos</div><div style="font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:700;color:var(--muted2);">{{ inactivos|length }}</div></div>
+      </div>
+    </div>
+
+    <!-- TABLA PENDIENTES -->
+    <div class="card" style="margin-bottom:20px;">
+      <div class="group-title" style="color:#F0A500;display:flex;align-items:center;gap:8px;">
+        <i data-lucide="clock" style="width:14px;height:14px;"></i>
+        Solicitudes pendientes de aprobación
+        {% if pendientes %}<span style="background:#7A5300;color:#F0A500;font-size:0.65rem;padding:1px 7px;border-radius:99px;font-family:'DM Mono',monospace;">{{ pendientes|length }}</span>{% endif %}
+      </div>
+      <table style="width:100%;border-collapse:collapse;">
+        <thead><tr>
+          <th style="text-align:left;">Nombre</th>
+          <th style="text-align:left;">Email</th>
+          <th style="text-align:left;">Rol solicitado</th>
+          <th style="text-align:left;">Fecha solicitud</th>
+          <th style="text-align:center;">Acciones</th>
+        </tr></thead>
+        <tbody>
+          {% if pendientes %}
+            {% for u in pendientes %}
+            <tr>
+              <td style="font-weight:500;">{{ u.nombre }}</td>
+              <td style="color:var(--muted2);">{{ u.email }}</td>
+              <td><span class="status-badge" style="color:#38BDF8;background:#0C3A52;">{{ u.rol }}</span></td>
+              <td style="color:var(--muted2);font-size:0.72rem;">{{ u.creado_en.strftime('%d/%m/%Y %H:%M') if u.creado_en else '—' }}</td>
+              <td style="text-align:center;">
+                <div style="display:flex;gap:6px;justify-content:center;">
+                  <form method="POST" action="/admin/usuarios/{{ u.id }}/aprobar" style="display:inline;">
+                    <button type="submit" class="btn-aprobar">
+                      <i data-lucide="check" style="width:12px;height:12px;"></i> Aprobar
+                    </button>
+                  </form>
+                  <form method="POST" action="/admin/usuarios/{{ u.id }}/rechazar" style="display:inline;">
+                    <button type="submit" class="btn-rechazar">
+                      <i data-lucide="x" style="width:12px;height:12px;"></i> Rechazar
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr class="empty-row"><td colspan="5"><i data-lucide="check-circle-2" style="width:14px;height:14px;display:inline;margin-right:6px;color:#00C48C;"></i>No hay solicitudes pendientes</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- TABLA ACTIVOS -->
+    <div class="card" style="margin-bottom:20px;">
+      <div class="group-title" style="color:#00C48C;display:flex;align-items:center;gap:8px;">
+        <i data-lucide="user-check" style="width:14px;height:14px;"></i>
+        Usuarios activos
+      </div>
+      <table style="width:100%;border-collapse:collapse;">
+        <thead><tr>
+          <th style="text-align:left;">Nombre</th>
+          <th style="text-align:left;">Email</th>
+          <th style="text-align:left;">Rol</th>
+          <th style="text-align:center;">Acción</th>
+        </tr></thead>
+        <tbody>
+          {% if activos %}
+            {% for u in activos %}
+            <tr>
+              <td style="font-weight:500;">{{ u.nombre }}{% if u.es_admin() %} <span style="font-size:0.65rem;color:#F0A500;margin-left:4px;">(tú)</span>{% endif %}</td>
+              <td style="color:var(--muted2);">{{ u.email }}</td>
+              <td><span class="status-badge" style="color:{% if u.es_admin() %}#F0A500{% else %}#38BDF8{% endif %};background:{% if u.es_admin() %}#7A5300{% else %}#0C3A52{% endif %};">{{ u.rol }}</span></td>
+              <td style="text-align:center;">
+                {% if not u.es_admin() %}
+                <form method="POST" action="/admin/usuarios/{{ u.id }}/rechazar" style="display:inline;">
+                  <button type="submit" class="btn-rechazar">
+                    <i data-lucide="user-x" style="width:12px;height:12px;"></i> Desactivar
+                  </button>
+                </form>
+                {% else %}
+                <span style="font-size:0.7rem;color:var(--muted2);">—</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr class="empty-row"><td colspan="4">No hay usuarios activos</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- TABLA INACTIVOS -->
+    {% if inactivos %}
+    <div class="card">
+      <div class="group-title" style="color:var(--muted2);display:flex;align-items:center;gap:8px;">
+        <i data-lucide="user-x" style="width:14px;height:14px;"></i>
+        Usuarios inactivos / rechazados
+      </div>
+      <table style="width:100%;border-collapse:collapse;">
+        <thead><tr>
+          <th style="text-align:left;">Nombre</th>
+          <th style="text-align:left;">Email</th>
+          <th style="text-align:left;">Rol</th>
+          <th style="text-align:center;">Acción</th>
+        </tr></thead>
+        <tbody>
+          {% for u in inactivos %}
+          <tr style="opacity:0.7;">
+            <td>{{ u.nombre }}</td>
+            <td style="color:var(--muted2);">{{ u.email }}</td>
+            <td><span class="status-badge" style="color:var(--muted2);background:#1E2738;">{{ u.rol }}</span></td>
+            <td style="text-align:center;">
+              <form method="POST" action="/admin/usuarios/{{ u.id }}/aprobar" style="display:inline;">
+                <button type="submit" class="btn-aprobar">
+                  <i data-lucide="user-check" style="width:12px;height:12px;"></i> Reactivar
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+  </main>
+
+  <script>
+    lucide.createIcons();
+    function aplicarTema(tema) {
+      const esClaro = tema === 'light';
+      document.body.classList.toggle('light', esClaro);
+      const icon  = document.getElementById('tema-icon');
+      const label = document.getElementById('tema-label');
+      if (icon)  icon.setAttribute('data-lucide', esClaro ? 'sun' : 'moon');
+      if (label) label.textContent = esClaro ? 'Oscuro' : 'Claro';
+      lucide.createIcons();
+      localStorage.setItem('gl-tema', tema);
+    }
+    function toggleTema() {
+      aplicarTema(document.body.classList.contains('light') ? 'dark' : 'light');
+    }
+    aplicarTema(localStorage.getItem('gl-tema') || 'dark');
+  </script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestor Lingüístico — Solicitar Acceso</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:#0B0E13; --card:#111620; --border:#1E2738;
+      --text:#C8D3E8; --muted2:#5A6A8A; --input-bg:#0B0E13;
+    }
+    body.light {
+      --bg:#F5F7FA; --card:#FFFFFF; --border:#E2E8F0;
+      --text:#1A2035; --muted2:#64748B; --input-bg:#F8FAFC;
+    }
+    body { background:var(--bg); font-family:'DM Mono',monospace; transition:background 0.25s; min-height:100vh; }
+    body::before { content:''; position:fixed; inset:0; z-index:9999; pointer-events:none;
+      background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px); }
+    body.light::before { display:none; }
+    .reg-card { background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; transition:background 0.25s,border-color 0.25s; }
+    .input-field { width:100%; background:var(--input-bg); border:1px solid var(--border); color:var(--text);
+      font-family:'DM Mono',monospace; font-size:0.85rem; padding:10px 14px; border-radius:6px;
+      outline:none; transition:border-color 0.15s,background 0.25s; }
+    .input-field:focus { border-color:#F0A500; }
+    .btn-submit { width:100%; background:linear-gradient(135deg,#F0A500,#C47F00); color:#0B0E13;
+      font-family:'Syne',sans-serif; font-weight:700; font-size:0.9rem; letter-spacing:0.04em;
+      padding:12px; border-radius:6px; border:none; cursor:pointer; transition:filter 0.2s,transform 0.1s; }
+    .btn-submit:hover { filter:brightness(1.12); }
+    .btn-submit:active { transform:scale(0.98); }
+    .flash-error   { background:#5C1828; border:1px solid #FB7185; color:#FB7185; }
+    .flash-success { background:#004D38; border:1px solid #00C48C; color:#00C48C; }
+    .flash-warning { background:#7A5300; border:1px solid #F0A500; color:#F0A500; }
+    label { font-family:'Syne',sans-serif; font-size:0.62rem; letter-spacing:0.12em;
+      text-transform:uppercase; color:var(--muted2); display:block; margin-bottom:6px; }
+    .rol-option { border:1px solid var(--border); border-radius:8px; padding:12px 14px; cursor:pointer;
+      transition:border-color 0.15s,background 0.15s; display:flex; align-items:flex-start; gap:10px; }
+    .rol-option:has(input:checked) { border-color:#F0A500; background:rgba(240,165,0,0.06); }
+    .rol-option input { accent-color:#F0A500; margin-top:2px; }
+    .theme-btn { position:fixed; top:16px; right:16px; display:flex; align-items:center; gap:6px;
+      padding:5px 12px; border-radius:20px; border:1px solid var(--border); background:var(--card);
+      color:var(--muted2); font-family:'DM Mono',monospace; font-size:0.7rem; cursor:pointer; transition:border-color 0.15s; }
+    .theme-btn:hover { border-color:#F0A500; color:#F0A500; }
+    .toggle-track { width:28px; height:15px; border-radius:99px; background:#2A3347; position:relative; transition:background 0.2s; flex-shrink:0; }
+    body.light .toggle-track { background:#F0A500; }
+    .toggle-thumb { position:absolute; top:2px; left:2px; width:11px; height:11px; border-radius:50%; background:#fff; transition:transform 0.2s; }
+    body.light .toggle-thumb { transform:translateX(13px); }
+    .live-dot { width:6px; height:6px; border-radius:50%; background:#00C48C; animation:pulse 2s infinite; }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-center px-4 py-10">
+
+  <!-- Toggle tema -->
+  <button onclick="toggleTema()" class="theme-btn">
+    <i id="tema-icon" data-lucide="moon" style="width:12px;height:12px;"></i>
+    <div class="toggle-track"><div class="toggle-thumb"></div></div>
+    <span id="tema-label">Claro</span>
+  </button>
+
+  <!-- Header -->
+  <div class="flex items-center gap-2 mb-8">
+    <div class="live-dot"></div>
+    <span style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;color:#C8D3E8;letter-spacing:-0.02em;">
+      Gestor Lingüístico
+    </span>
+  </div>
+
+  <!-- Card -->
+  <div class="reg-card" style="width:100%;max-width:420px;">
+    <div style="height:3px;background:linear-gradient(90deg,#F0A500,#C47F00);"></div>
+
+    <div style="padding:2rem;">
+
+      <!-- Título -->
+      <div class="flex items-center gap-2 mb-6">
+        <div style="padding:8px;background:#7A5300;border-radius:8px;">
+          <i data-lucide="user-plus" style="width:16px;height:16px;color:#F0A500;"></i>
+        </div>
+        <div>
+          <p style="margin:0;font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;color:#C8D3E8;">Solicitar acceso</p>
+          <p style="margin:0;font-size:0.7rem;color:#5A6A8A;">El administrador aprobará tu cuenta</p>
+        </div>
+      </div>
+
+      <!-- Flash messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash-{{ category }}" style="padding:10px 14px;border-radius:6px;font-size:0.78rem;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+              <i data-lucide="{{ 'check-circle-2' if category == 'success' else 'alert-circle' }}" style="width:14px;height:14px;flex-shrink:0;"></i>
+              {{ message }}
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <!-- Formulario -->
+      <form method="POST" action="/registro" style="display:flex;flex-direction:column;gap:14px;">
+
+        <div>
+          <label for="nombre">Nombre completo</label>
+          <input id="nombre" name="nombre" type="text" class="input-field"
+            placeholder="Tu nombre" value="{{ nombre or '' }}" required autocomplete="name" />
+        </div>
+
+        <div>
+          <label for="email">Correo electrónico</label>
+          <input id="email" name="email" type="email" class="input-field"
+            placeholder="tu@email.com" value="{{ email or '' }}" required autocomplete="email" />
+        </div>
+
+        <div>
+          <label for="password">Contraseña</label>
+          <div style="position:relative;">
+            <input id="password" name="password" type="password" class="input-field"
+              placeholder="Mínimo 6 caracteres" required style="padding-right:42px;" />
+            <button type="button" onclick="togglePass('password','eye1')" tabindex="-1"
+              style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#5A6A8A;padding:0;">
+              <i id="eye1" data-lucide="eye" style="width:16px;height:16px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label for="confirmar">Confirmar contraseña</label>
+          <div style="position:relative;">
+            <input id="confirmar" name="confirmar" type="password" class="input-field"
+              placeholder="Repite tu contraseña" required style="padding-right:42px;" />
+            <button type="button" onclick="togglePass('confirmar','eye2')" tabindex="-1"
+              style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#5A6A8A;padding:0;">
+              <i id="eye2" data-lucide="eye" style="width:16px;height:16px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Selector de rol -->
+        <div>
+          <label>Rol que desempeñarás</label>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+            <label class="rol-option" style="text-transform:none;letter-spacing:0;font-size:0.85rem;cursor:pointer;">
+              <input type="radio" name="rol" value="coordinador"
+                {{ 'checked' if (rol or 'coordinador') == 'coordinador' }} />
+              <div>
+                <p style="margin:0;font-family:'Syne',sans-serif;font-size:0.85rem;font-weight:600;color:#C8D3E8;">Coordinador</p>
+                <p style="margin:0;font-size:0.72rem;color:#5A6A8A;margin-top:2px;">Gestiona proyectos, asigna lingüistas y actualiza estados.</p>
+              </div>
+            </label>
+            <label class="rol-option" style="text-transform:none;letter-spacing:0;font-size:0.85rem;cursor:pointer;">
+              <input type="radio" name="rol" value="linguista"
+                {{ 'checked' if rol == 'linguista' }} />
+              <div>
+                <p style="margin:0;font-family:'Syne',sans-serif;font-size:0.85rem;font-weight:600;color:#C8D3E8;">Lingüista</p>
+                <p style="margin:0;font-size:0.72rem;color:#5A6A8A;margin-top:2px;">Traduce e interpreta proyectos asignados por el coordinador.</p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit" style="margin-top:6px;">
+          Enviar solicitud de acceso
+        </button>
+
+      </form>
+
+      <!-- Enlace a login -->
+      <p style="margin-top:16px;text-align:center;font-size:0.78rem;color:#5A6A8A;">
+        ¿Ya tienes cuenta?
+        <a href="/login" style="color:#F0A500;text-decoration:none;font-weight:500;">Inicia sesión</a>
+      </p>
+
+    </div>
+  </div>
+
+  <p style="margin-top:20px;font-size:0.65rem;color:#2A3347;text-align:center;">
+    Gestor Lingüístico · MVP 1.0.0 · Uso interno
+  </p>
+
+  <script>
+    lucide.createIcons();
+
+    function togglePass(inputId, iconId) {
+      const input = document.getElementById(inputId);
+      const icon  = document.getElementById(iconId);
+      input.type = input.type === 'password' ? 'text' : 'password';
+      icon.setAttribute('data-lucide', input.type === 'password' ? 'eye' : 'eye-off');
+      lucide.createIcons();
+    }
+
+    function aplicarTema(tema) {
+      const esClaro = tema === 'light';
+      document.body.classList.toggle('light', esClaro);
+      const icon  = document.getElementById('tema-icon');
+      const label = document.getElementById('tema-label');
+      if (icon)  icon.setAttribute('data-lucide', esClaro ? 'sun' : 'moon');
+      if (label) label.textContent = esClaro ? 'Oscuro' : 'Claro';
+      lucide.createIcons();
+      localStorage.setItem('gl-tema', tema);
+    }
+    function toggleTema() {
+      aplicarTema(document.body.classList.contains('light') ? 'dark' : 'light');
+    }
+    aplicarTema(localStorage.getItem('gl-tema') || 'dark');
+  </script>
+</body>
+</html>

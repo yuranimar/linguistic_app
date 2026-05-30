@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestor Lingüístico — Centro de Operaciones</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { display: ['Syne', 'sans-serif'], mono: ['DM Mono', 'monospace'] },
+          colors: {
+            ops: {
+              bg:'#0B0E13', surface:'#111620', card:'#161C28', border:'#1E2738',
+              muted:'#2A3347', amber:'#F0A500', 'amber-dim':'#7A5300',
+              emerald:'#00C48C', 'emerald-dim':'#004D38', sky:'#38BDF8',
+              'sky-dim':'#0C3A52', rose:'#FB7185', 'rose-dim':'#5C1828',
+              text:'#C8D3E8', muted2:'#5A6A8A',
+            }
+          },
+          animation: { 'fade-in':'fadeIn 0.3s ease-out', 'slide-up':'slideUp 0.4s cubic-bezier(0.16,1,0.3,1)' },
+          keyframes: {
+            fadeIn: { from:{ opacity:0 }, to:{ opacity:1 } },
+            slideUp: { from:{ opacity:0, transform:'translateY(16px)' }, to:{ opacity:1, transform:'translateY(0)' } }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* ── Variables de tema ─────────────────────────────────────────── */
+    :root {
+      --bg:        #0B0E13;
+      --surface:   #111620;
+      --card:      #161C28;
+      --border:    #1E2738;
+      --muted:     #2A3347;
+      --text:      #C8D3E8;
+      --muted2:    #5A6A8A;
+      --header-bg: #0d1119;
+      --row-hover: rgba(255,255,255,0.015);
+      --row-border:#1a2030;
+      --modal-bg:  #111620;
+      --modal-bdr: #2A3347;
+      --input-bg:  #0B0E13;
+      --filled-bg: #0a1510;
+      --scroll-track: #111620;
+      --scroll-thumb: #2A3347;
+      --amber:     #F0A500;
+      --emerald:   #00C48C;
+      --sky:       #38BDF8;
+      --rose:      #FB7185;
+    }
+    /* ── Modo claro ──────────────────────────────────────────────────── */
+    body.light {
+      --bg:        #F5F7FA;
+      --surface:   #FFFFFF;
+      --card:      #FFFFFF;
+      --border:    #E2E8F0;
+      --muted:     #CBD5E1;
+      --text:      #1A2035;
+      --muted2:    #64748B;
+      --header-bg: #FFFFFF;
+      --row-hover: rgba(0,0,0,0.025);
+      --row-border:#E2E8F0;
+      --modal-bg:  #FFFFFF;
+      --modal-bdr: #E2E8F0;
+      --input-bg:  #F8FAFC;
+      --filled-bg: #F0FDF4;
+      --scroll-track: #F1F5F9;
+      --scroll-thumb: #CBD5E1;
+    }
+
+    *{box-sizing:border-box}
+    body{background-color:var(--bg);color:var(--text);font-family:'DM Mono',monospace;overflow:hidden;transition:background-color 0.25s,color 0.25s}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none}
+    body.light::before{display:none}
+
+    ::-webkit-scrollbar{width:4px}
+    ::-webkit-scrollbar-track{background:var(--scroll-track)}
+    ::-webkit-scrollbar-thumb{background:var(--scroll-thumb);border-radius:2px}
+
+    .kpi-card{background:var(--card);border:1px solid var(--border);transition:border-color 0.2s,box-shadow 0.2s,background 0.25s}
+    .kpi-card:hover{border-color:var(--muted);box-shadow:0 0 20px rgba(0,0,0,0.08)}
+    .status-badge{font-family:'DM Mono',monospace;font-size:0.65rem;letter-spacing:0.08em;text-transform:uppercase;padding:2px 8px;border-radius:2px;font-weight:500}
+    .email-card{border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:border-color 0.15s,background 0.15s}
+    .email-card:hover,.email-card.active{border-color:#F0A500;background:var(--card)}
+    .email-card.active{border-left:3px solid #F0A500}
+    .ai-btn{background:linear-gradient(135deg,#F0A500,#C47F00);color:#0B0E13;font-family:'Syne',sans-serif;font-weight:700;letter-spacing:0.04em;transition:filter 0.2s,transform 0.1s}
+    .ai-btn:hover{filter:brightness(1.15)}
+    .ai-btn:active{transform:scale(0.98)}
+    .ai-btn:disabled{opacity:0.5;cursor:not-allowed}
+    .form-input{background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:0.78rem;transition:border-color 0.15s,background 0.25s;width:100%;padding:6px 10px;border-radius:3px;outline:none}
+    .form-input:focus{border-color:#F0A500}
+    .form-input.filled{border-color:#00C48C;background:var(--filled-bg)}
+    table th{font-family:'Syne',sans-serif;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted2);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+    table td{padding:10px 12px;border-bottom:1px solid var(--row-border);font-size:0.78rem;vertical-align:middle;color:var(--text)}
+    table tr:hover td{background:var(--row-hover)}
+    table tr:last-child td{border-bottom:none}
+    #modal-overlay{backdrop-filter:blur(4px);background:rgba(0,0,0,0.5)}
+    .modal-card{background:var(--modal-bg);border:1px solid var(--modal-bdr);box-shadow:0 24px 80px rgba(0,0,0,0.15);animation:slideUp 0.3s cubic-bezier(0.16,1,0.3,1)}
+    .live-dot{width:6px;height:6px;border-radius:50%;background:#00C48C;animation:pulse 2s infinite}
+    @keyframes thinking{0%,100%{opacity:0.3}50%{opacity:1}}
+    .thinking-dot{animation:thinking 1.2s infinite}
+    .thinking-dot:nth-child(2){animation-delay:0.2s}
+    .thinking-dot:nth-child(3){animation-delay:0.4s}
+    .section-label{font-family:'Syne',sans-serif;font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted2)}
+
+    /* Toggle de tema */
+    .theme-toggle{display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;border:1px solid var(--border);cursor:pointer;background:var(--card);transition:border-color 0.15s,background 0.25s;font-size:0.7rem;color:var(--muted2)}
+    .theme-toggle:hover{border-color:#F0A500;color:#F0A500}
+    .toggle-track{width:28px;height:15px;border-radius:99px;background:var(--muted);position:relative;transition:background 0.2s;flex-shrink:0}
+    body.light .toggle-track{background:#F0A500}
+    .toggle-thumb{position:absolute;top:2px;left:2px;width:11px;height:11px;border-radius:50%;background:#fff;transition:transform 0.2s}
+    body.light .toggle-thumb{transform:translateX(13px)}
+
+    /* Ajustes modo claro para elementos con colores hardcoded */
+    body.light header{border-bottom-color:var(--border) !important}
+    body.light aside{border-right-color:var(--border) !important}
+    body.light .border-ops-border{border-color:var(--border) !important}
+    body.light [style*="background:#0d1119"]{background:var(--header-bg) !important}
+    body.light [style*="background:#111620"]{background:var(--surface) !important}
+    body.light [style*="background:#0B0E13"]{background:var(--input-bg) !important}
+    body.light [style*="background:#161C28"]{background:var(--card) !important}
+    body.light [style*="color:#C8D3E8"]{color:var(--text) !important}
+    body.light [style*="color:#5A6A8A"]{color:var(--muted2) !important}
+    body.light [style*="border-color:#1E2738"]{border-color:var(--border) !important}
+    body.light [style*="border:1px solid #1E2738"]{border-color:var(--border) !important}
+    body.light [style*="border:1px solid #2A3347"]{border-color:var(--border) !important}
+    body.light .text-ops-muted2{color:var(--muted2) !important}
+    body.light .text-ops-text{color:var(--text) !important}
+    body.light .bg-ops-border{background:var(--border) !important}
+    body.light thead[style]{background:var(--header-bg) !important}
+    body.light thead tr{background:#F8FAFC !important}
+  </style>
+</head>
+<body class="h-screen flex flex-col select-none">
+
+  <!-- HEADER -->
+  <header class="flex-shrink-0 flex items-center justify-between px-5 py-3 border-b border-ops-border" style="background:#0d1119">
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-1.5">
+        <div class="live-dot"></div>
+        <span class="section-label" style="color:#00C48C">EN VIVO</span>
+      </div>
+      <div class="w-px h-4 bg-ops-border"></div>
+      <span class="font-display font-800 text-lg tracking-tight text-ops-text">Gestor Lingüístico</span>
+      <span class="section-label ml-1">/ Centro de Operaciones</span>
+    </div>
+    <div class="flex items-center gap-4 text-ops-muted2 text-xs">
+      <span id="clock" class="font-mono"></span>
+      <div class="flex items-center gap-1.5">
+        <i data-lucide="server" class="w-3 h-3" style="color:#00C48C"></i>
+        <span style="color:#00C48C">API conectada</span>
+      </div>
+      <div class="w-px h-4" style="background:#1E2738"></div>
+      <div class="flex items-center gap-2">
+        <i data-lucide="user-circle-2" class="w-3.5 h-3.5" style="color:#5A6A8A"></i>
+        <span class="font-mono" style="color:#C8D3E8; font-size:0.7rem;">{{ current_user.nombre }}</span>
+        <span class="font-mono" style="color:#5A6A8A; font-size:0.65rem; text-transform:uppercase; letter-spacing:0.1em;">({{ current_user.rol }})</span>
+      </div>
+      <!-- Enlace panel admin (solo visible para admin) -->
+      {% if current_user.rol == 'admin' %}
+      <a href="/admin/usuarios" style="display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:4px;border:1px solid var(--border);color:#A78BFA;text-decoration:none;font-size:0.7rem;transition:border-color 0.15s;"
+         onmouseover="this.style.borderColor='#A78BFA';"
+         onmouseout="this.style.borderColor='var(--border)';">
+        <i data-lucide="shield-check" style="width:12px;height:12px;"></i>Admin
+        {% if pendientes_count > 0 %}
+        <span style="background:#F0A500;color:#0B0E13;font-size:0.6rem;padding:1px 5px;border-radius:99px;font-weight:700;">{{ pendientes_count }}</span>
+        {% endif %}
+      </a>
+      {% endif %}
+
+      <!-- Enlace admin (solo visible para admin) -->
+      {% if current_user.es_admin() %}
+      <a href="/admin/usuarios" title="Gestión de usuarios"
+        style="display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:4px;border:1px solid #1E2738;color:#5A6A8A;text-decoration:none;font-size:0.7rem;transition:border-color 0.15s,color 0.15s;"
+        onmouseover="this.style.borderColor='#F0A500';this.style.color='#F0A500';"
+        onmouseout="this.style.borderColor='#1E2738';this.style.color='#5A6A8A';">
+        <i data-lucide="users" style="width:12px;height:12px;"></i>
+        Usuarios
+        {% if pendientes_count > 0 %}
+        <span style="background:#F0A500;color:#0B0E13;font-size:0.6rem;font-weight:700;padding:1px 5px;border-radius:99px;">{{ pendientes_count }}</span>
+        {% endif %}
+      </a>
+      {% endif %}
+
+      <!-- Toggle de tema -->
+      <button onclick="toggleTema()" class="theme-toggle" title="Cambiar tema">
+        <i id="tema-icon" data-lucide="moon" style="width:12px;height:12px;"></i>
+        <div class="toggle-track"><div class="toggle-thumb"></div></div>
+        <span id="tema-label">Claro</span>
+      </button>
+
+      <a href="/logout" title="Cerrar sesión"
+        style="display:flex; align-items:center; gap:5px; padding:4px 10px; border-radius:4px; border:1px solid #1E2738; color:#5A6A8A; text-decoration:none; font-size:0.7rem; transition:border-color 0.15s, color 0.15s;"
+        onmouseover="this.style.borderColor='#FB7185'; this.style.color='#FB7185';"
+        onmouseout="this.style.borderColor='#1E2738'; this.style.color='#5A6A8A';">
+        <i data-lucide="log-out" style="width:12px; height:12px;"></i>
+        Salir
+      </a>
+    </div>
+  </header>
+
+  <!-- KPIs -->
+  <div class="flex-shrink-0 grid grid-cols-4 gap-3 px-5 py-3 border-b border-ops-border" style="background:#0d1119">
+    <div class="kpi-card rounded p-3 flex items-center gap-3">
+      <div class="p-2 rounded" style="background:#0C3A52"><i data-lucide="layers" class="w-4 h-4" style="color:#38BDF8"></i></div>
+      <div><div class="section-label mb-0.5">Proyectos Activos</div><div class="font-display font-700 text-xl text-ops-text" id="kpi-activos">—</div></div>
+    </div>
+    <div class="kpi-card rounded p-3 flex items-center gap-3">
+      <div class="p-2 rounded" style="background:#5C1828"><i data-lucide="alarm-clock" class="w-4 h-4" style="color:#FB7185"></i></div>
+      <div><div class="section-label mb-0.5">Urgentes (&lt;48h)</div><div class="font-display font-700 text-xl text-ops-text" id="kpi-urgentes">—</div></div>
+    </div>
+    <div class="kpi-card rounded p-3 flex items-center gap-3">
+      <div class="p-2 rounded" style="background:#004D38"><i data-lucide="check-circle-2" class="w-4 h-4" style="color:#00C48C"></i></div>
+      <div><div class="section-label mb-0.5">Entregados</div><div class="font-display font-700 text-xl text-ops-text" id="kpi-entregados">—</div></div>
+    </div>
+    <div class="kpi-card rounded p-3 flex items-center gap-3">
+      <div class="p-2 rounded" style="background:#7A5300"><i data-lucide="dollar-sign" class="w-4 h-4" style="color:#F0A500"></i></div>
+      <div><div class="section-label mb-0.5">Monto Total (USD)</div><div class="font-display font-700 text-xl text-ops-text" id="kpi-monto">—</div></div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="flex flex-1 overflow-hidden">
+
+    <!-- PANEL IZQUIERDO -->
+    <aside class="flex-shrink-0 flex flex-col border-r border-ops-border overflow-hidden" style="width:340px;background:#0d1119">
+      <div class="px-4 py-3 border-b border-ops-border flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="inbox" class="w-4 h-4 text-ops-amber"></i>
+          <span class="font-display font-600 text-sm">Bandeja de Solicitudes</span>
+        </div>
+        <span class="section-label">SIMULADOR</span>
+      </div>
+
+      <!-- Plantillas -->
+      <div class="flex-shrink-0 p-3 space-y-2 border-b border-ops-border" style="max-height:200px;overflow-y:auto">
+        <div class="section-label mb-2">Selecciona una solicitud entrante</div>
+        <div class="email-card rounded p-2.5 active" data-email="0" onclick="seleccionarEmail(0)">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-600" style="color:#F0A500">Cavelier Abogados</span>
+            <span class="section-label">09:14</span>
+          </div>
+          <p class="text-xs text-ops-muted2 leading-relaxed truncate">Contrato bilateral 12.500 palabras ES&rarr;EN urgente</p>
+        </div>
+        <div class="email-card rounded p-2.5" data-email="1" onclick="seleccionarEmail(1)">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-600" style="color:#38BDF8">Laboratorios Lafrancol</span>
+            <span class="section-label">08:02</span>
+          </div>
+          <p class="text-xs text-ops-muted2 leading-relaxed truncate">Ficha técnica farmacéutica 3.200 palabras ES&rarr;PT</p>
+        </div>
+        <div class="email-card rounded p-2.5" data-email="2" onclick="seleccionarEmail(2)">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-600" style="color:#00C48C">Fundación Alianza</span>
+            <span class="section-label">Ayer</span>
+          </div>
+          <p class="text-xs text-ops-muted2 leading-relaxed truncate">Interpretación simultánea congreso 6 horas ES&harr;FR</p>
+        </div>
+      </div>
+
+      <!-- Email body -->
+      <div class="flex-1 overflow-y-auto p-3">
+        <div class="section-label mb-2">Cuerpo del correo</div>
+        <div id="email-body" class="text-xs leading-relaxed text-ops-text p-3 rounded border border-ops-border" style="background:#0B0E13;min-height:110px;white-space:pre-wrap;font-family:'DM Mono',monospace"></div>
+        <button id="btn-ia" onclick="procesarConIA()" class="ai-btn w-full mt-3 py-2.5 px-4 rounded text-sm flex items-center justify-center gap-2">
+          <i data-lucide="sparkles" class="w-4 h-4"></i>Procesar con IA
+        </button>
+        <div id="ia-thinking" class="hidden flex items-center justify-center gap-1 mt-3">
+          <span class="section-label mr-1">Analizando</span>
+          <span class="thinking-dot w-1.5 h-1.5 rounded-full inline-block" style="background:#F0A500"></span>
+          <span class="thinking-dot w-1.5 h-1.5 rounded-full inline-block" style="background:#F0A500"></span>
+          <span class="thinking-dot w-1.5 h-1.5 rounded-full inline-block" style="background:#F0A500"></span>
+        </div>
+      </div>
+
+      <!-- Formulario extraído -->
+      <div class="border-t border-ops-border p-3">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <i data-lucide="file-plus-2" class="w-3.5 h-3.5 text-ops-emerald"></i>
+            <span class="section-label" style="color:#00C48C">Datos extraídos</span>
+          </div>
+          <div id="form-status" class="section-label hidden" style="color:#00C48C">&#10003; LISTO PARA ENVIAR</div>
+        </div>
+        <div class="space-y-1.5">
+          <div><label class="section-label block mb-0.5">Cliente ID</label><input id="f-cliente" type="number" class="form-input" placeholder="—" /></div>
+          <div class="grid grid-cols-2 gap-1.5">
+            <div><label class="section-label block mb-0.5">Servicio</label><input id="f-servicio" type="text" class="form-input" placeholder="—" /></div>
+            <div><label class="section-label block mb-0.5">Idioma</label><input id="f-idioma" type="text" class="form-input" placeholder="—" /></div>
+          </div>
+          <div class="grid grid-cols-2 gap-1.5">
+            <div><label class="section-label block mb-0.5">Volumen</label><input id="f-volumen" type="number" class="form-input" placeholder="—" /></div>
+            <div><label class="section-label block mb-0.5">Costo USD</label><input id="f-costo" type="number" step="0.01" class="form-input" placeholder="—" /></div>
+          </div>
+          <div><label class="section-label block mb-0.5">Deadline</label><input id="f-deadline" type="datetime-local" class="form-input" /></div>
+        </div>
+        <button id="btn-registrar" onclick="registrarProyecto()" disabled
+          class="w-full mt-3 py-2 px-4 rounded text-xs font-display font-700 tracking-wide border transition-all"
+          style="border-color:#1E2738;color:#5A6A8A;background:transparent">
+          Registrar Proyecto en BD
+        </button>
+        <div id="registro-msg" class="hidden mt-2 text-xs text-center rounded p-1.5"></div>
+      </div>
+    </aside>
+
+    <!-- PANEL DERECHO -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+      <div class="flex-shrink-0 flex items-center justify-between px-5 py-3 border-b border-ops-border" style="background:#0d1119">
+        <div class="flex items-center gap-3">
+          <i data-lucide="table-2" class="w-4 h-4 text-ops-sky"></i>
+          <span class="font-display font-600 text-sm">Tablero de Proyectos</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <select id="filtro-estado" onchange="filtrarProyectos()" class="form-input" style="width:auto;padding:4px 8px;font-size:0.7rem">
+            <option value="">Todos los estados</option>
+            <option value="recibido">Recibido</option>
+            <option value="en_proceso">En Proceso</option>
+            <option value="revision">Revisión</option>
+            <option value="entregado">Entregado</option>
+            <option value="facturado">Facturado</option>
+            <option value="cancelado">Cancelado</option>
+          </select>
+          <button onclick="cargarProyectos()" class="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs border border-ops-border text-ops-muted2 hover:border-ops-sky hover:text-ops-sky transition-colors">
+            <i data-lucide="refresh-cw" class="w-3 h-3"></i>Actualizar
+          </button>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-auto">
+        <table class="w-full border-collapse">
+          <thead style="position:sticky;top:0;background:#0d1119;z-index:10">
+            <tr>
+              <th class="text-left">Código</th>
+              <th class="text-left">Cliente</th>
+              <th class="text-left">Servicio</th>
+              <th class="text-left">Idioma</th>
+              <th class="text-right">Volumen</th>
+              <th class="text-right">Costo USD</th>
+              <th class="text-center">Deadline</th>
+              <th class="text-center">Estado</th>
+              <th class="text-left">Lingüista</th>
+              <th class="text-center">Acción</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-proyectos">
+            <tr><td colspan="10" class="text-center py-12 text-ops-muted2">
+              <div class="flex flex-col items-center gap-2">
+                <i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>
+                <span class="section-label">Cargando datos…</span>
+              </div>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="flex-shrink-0 flex items-center justify-between px-5 py-2 border-t border-ops-border text-xs text-ops-muted2" style="background:#0d1119">
+        <span id="tabla-info">—</span>
+        <span class="section-label">Actualizado: <span id="ultima-actualizacion">—</span></span>
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL -->
+  <div id="modal-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center" onclick="cerrarModalOverlay(event)">
+    <div class="modal-card rounded-lg w-full max-w-md mx-4 overflow-hidden" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-ops-muted">
+        <div>
+          <div class="section-label mb-0.5">Gestión de Proyecto</div>
+          <div class="font-display font-700 text-base text-ops-text" id="modal-codigo">—</div>
+        </div>
+        <button onclick="cerrarModal()" class="text-ops-muted2 hover:text-ops-text transition-colors">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div class="px-5 py-4">
+        <div class="grid grid-cols-2 gap-3 mb-5">
+          <div><div class="section-label mb-1">Cliente</div><div class="text-xs text-ops-text" id="modal-cliente">—</div></div>
+          <div><div class="section-label mb-1">Servicio</div><div class="text-xs text-ops-text" id="modal-servicio">—</div></div>
+          <div><div class="section-label mb-1">Idioma</div><div class="text-xs text-ops-text" id="modal-idioma">—</div></div>
+          <div><div class="section-label mb-1">Costo Total</div><div class="text-xs font-600" style="color:#F0A500" id="modal-costo">—</div></div>
+        </div>
+        <div class="flex items-center gap-3 mb-5 p-3 rounded border border-ops-border" style="background:#0B0E13">
+          <div><div class="section-label mb-1">Estado actual</div><div id="modal-estado-actual"></div></div>
+          <div class="flex-1 flex items-center justify-center"><i data-lucide="arrow-right" class="w-4 h-4 text-ops-muted2"></i></div>
+          <div class="flex-1">
+            <div class="section-label mb-1">Cambiar a</div>
+            <select id="modal-nuevo-estado" class="form-input">
+              <option value="recibido">Recibido</option>
+              <option value="en_proceso">En Proceso</option>
+              <option value="revision">Revisión</option>
+              <option value="entregado">Entregado</option>
+              <option value="facturado">Facturado</option>
+              <option value="cancelado">Cancelado</option>
+            </select>
+          </div>
+        </div>
+        <div class="mb-5">
+          <div class="section-label mb-1">Deadline</div>
+          <div class="text-xs text-ops-text" id="modal-deadline">—</div>
+        </div>
+        <div class="mb-5">
+          <div class="section-label mb-1">Notas de operación (opcional)</div>
+          <textarea id="modal-notas" rows="2" class="form-input" style="resize:none" placeholder="Ej: Cliente confirmó extensión de plazo…"></textarea>
+        </div>
+        <div id="modal-msg" class="hidden text-xs text-center rounded p-2 mb-3"></div>
+        <div class="flex gap-2">
+          <button onclick="cerrarModal()" class="flex-1 py-2 rounded text-xs border border-ops-border text-ops-muted2 hover:border-ops-muted transition-colors font-display font-600">Cancelar</button>
+          <button id="btn-guardar-estado" onclick="guardarEstado()" class="flex-1 py-2 rounded text-xs font-display font-700 tracking-wide transition-all" style="background:#F0A500;color:#0B0E13">Confirmar Cambio</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="hidden fixed bottom-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded border text-sm font-mono animate-slide-up" style="background:#111620;border-color:#2A3347">
+    <i id="toast-icon" class="w-4 h-4"></i>
+    <span id="toast-msg"></span>
+  </div>
+
+  <script>
+  const API = '';
+  let todosLosProyectos = [];
+  let proyectoEnModal = null;
+
+  // Reloj
+  function actualizarReloj(){
+    document.getElementById('clock').textContent =
+      new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  }
+  setInterval(actualizarReloj,1000); actualizarReloj();
+
+  // Estado visual
+  const ESTADO_META = {
+    recibido:  {label:'Recibido',  color:'#38BDF8',bg:'#0C3A52'},
+    en_proceso:{label:'En Proceso',color:'#F0A500',bg:'#7A5300'},
+    revision:  {label:'Revisión',  color:'#FB7185',bg:'#5C1828'},
+    entregado: {label:'Entregado', color:'#00C48C',bg:'#004D38'},
+    facturado: {label:'Facturado', color:'#A78BFA',bg:'#3B0764'},
+    cancelado: {label:'Cancelado', color:'#5A6A8A',bg:'#1E2738'},
+  };
+  function badgeEstado(e){
+    const m=ESTADO_META[e]||ESTADO_META.recibido;
+    return `<span class="status-badge" style="color:${m.color};background:${m.bg}">${m.label}</span>`;
+  }
+  function urgente(dl){if(!dl)return false;const d=new Date(dl)-new Date();return d>0&&d<48*3600e3;}
+  function formatDeadline(iso){
+    if(!iso)return '<span class="text-ops-muted2">—</span>';
+    const d=new Date(iso),diff=d-new Date();
+    const fmt=d.toLocaleDateString('es-CO',{day:'2-digit',month:'short'});
+    if(diff<0)return `<span style="color:#FB7185">&#9889; ${fmt}</span>`;
+    if(diff<48*3600e3)return `<span style="color:#F0A500">&#8987; ${fmt}</span>`;
+    return `<span class="text-ops-muted2">${fmt}</span>`;
+  }
+
+  // Cargar proyectos
+  async function cargarProyectos(estado=''){
+    const url=estado
+      ?`${API}/api/proyectos?estado=${estado}&todos=true&por_pagina=100`
+      :`${API}/api/proyectos?todos=true&por_pagina=100`;
+    try{
+      const res=await fetch(url);
+      const data=await res.json();
+      todosLosProyectos=data.proyectos||[];
+      renderizarTabla(todosLosProyectos);
+      actualizarKPIs(todosLosProyectos);
+      document.getElementById('ultima-actualizacion').textContent=
+        new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+    }catch(err){
+      document.getElementById('tabla-proyectos').innerHTML=
+        `<tr><td colspan="10" class="text-center py-8" style="color:#FB7185">
+          <i data-lucide="wifi-off" class="w-4 h-4 inline mr-2"></i>
+          Error al conectar con la API. &iquest;Est&aacute; Flask corriendo en :5000?
+        </td></tr>`;
+      lucide.createIcons();
+    }
+  }
+  function filtrarProyectos(){cargarProyectos(document.getElementById('filtro-estado').value);}
+
+  // Renderizar tabla
+  function renderizarTabla(proyectos){
+    const tbody=document.getElementById('tabla-proyectos');
+    if(!proyectos.length){
+      tbody.innerHTML=`<tr><td colspan="10" class="text-center py-10 text-ops-muted2 section-label">No hay proyectos para mostrar.</td></tr>`;
+      lucide.createIcons();
+      document.getElementById('tabla-info').textContent='0 proyectos';
+      return;
+    }
+    tbody.innerHTML=proyectos.map(p=>{
+      const esU=urgente(p.deadline)&&['recibido','en_proceso','revision'].includes(p.estado);
+      const pJSON=JSON.stringify(p).replace(/'/g,"&#39;");
+      return `<tr style="${esU?'background:rgba(240,165,0,0.04)':''}">
+        <td><span class="font-mono text-xs" style="color:${esU?'#F0A500':'#5A6A8A'}">${p.codigo_seguimiento}</span>${esU?'<span class="ml-1 text-xs" style="color:#F0A500">&#9889;</span>':''}</td>
+        <td class="text-ops-text font-500">${p.cliente?.nombre??'—'}</td>
+        <td class="text-ops-muted2">${p.servicio}</td>
+        <td><span class="font-mono text-xs" style="color:#38BDF8">${p.idioma}</span></td>
+        <td class="text-right font-mono text-xs text-ops-muted2">${p.volumen!=null?Number(p.volumen).toLocaleString('es-CO'):'—'}</td>
+        <td class="text-right font-mono text-xs" style="color:#F0A500">${p.costo_total!=null?'$'+Number(p.costo_total).toFixed(2):'—'}</td>
+        <td class="text-center text-xs">${formatDeadline(p.deadline)}</td>
+        <td class="text-center">${badgeEstado(p.estado)}</td>
+        <td class="text-xs text-ops-muted2">${p.linguista?.nombre??'<span style="color:#5C1828">Sin asignar</span>'}</td>
+        <td class="text-center"><button onclick='abrirModalStr(${JSON.stringify(pJSON)})'
+          class="px-3 py-1 rounded text-xs font-display font-600 border transition-all hover:border-ops-sky hover:text-ops-sky"
+          style="border-color:#2A3347;color:#5A6A8A">Gestionar</button></td>
+      </tr>`;
+    }).join('');
+    lucide.createIcons();
+    document.getElementById('tabla-info').textContent=`${proyectos.length} proyecto${proyectos.length!==1?'s':''}`;
+  }
+
+  function abrirModalStr(jsonStr){abrirModal(JSON.parse(jsonStr));}
+
+  // KPIs
+  function actualizarKPIs(proyectos){
+    const activos=proyectos.filter(p=>['recibido','en_proceso','revision'].includes(p.estado));
+    const urgentes=proyectos.filter(p=>urgente(p.deadline)&&activos.find(a=>a.id===p.id));
+    const entregados=proyectos.filter(p=>['entregado','facturado'].includes(p.estado));
+    const monto=proyectos.reduce((s,p)=>s+(p.costo_total||0),0);
+    document.getElementById('kpi-activos').textContent=activos.length;
+    document.getElementById('kpi-urgentes').textContent=urgentes.length;
+    document.getElementById('kpi-entregados').textContent=entregados.length;
+    document.getElementById('kpi-monto').textContent='$'+monto.toFixed(2);
+  }
+
+  // Modal
+  function abrirModal(p){
+    proyectoEnModal=p;
+    document.getElementById('modal-codigo').textContent=p.codigo_seguimiento;
+    document.getElementById('modal-cliente').textContent=p.cliente?.nombre??'—';
+    document.getElementById('modal-servicio').textContent=p.servicio;
+    document.getElementById('modal-idioma').textContent=p.idioma;
+    document.getElementById('modal-costo').textContent=p.costo_total!=null?`USD $${Number(p.costo_total).toFixed(2)}`:'—';
+    document.getElementById('modal-estado-actual').innerHTML=badgeEstado(p.estado);
+    document.getElementById('modal-nuevo-estado').value=p.estado;
+    const dl=p.deadline?new Date(p.deadline).toLocaleString('es-CO',{dateStyle:'medium',timeStyle:'short'}):'Sin deadline';
+    document.getElementById('modal-deadline').textContent=dl;
+    document.getElementById('modal-notas').value='';
+    document.getElementById('modal-msg').classList.add('hidden');
+    document.getElementById('modal-overlay').classList.remove('hidden');
+    lucide.createIcons();
+  }
+  function cerrarModal(){document.getElementById('modal-overlay').classList.add('hidden');proyectoEnModal=null;}
+  function cerrarModalOverlay(e){if(e.target===document.getElementById('modal-overlay'))cerrarModal();}
+
+  // Guardar estado
+  async function guardarEstado(){
+    if(!proyectoEnModal)return;
+    const nuevoEstado=document.getElementById('modal-nuevo-estado').value;
+    const btn=document.getElementById('btn-guardar-estado');
+    const msgEl=document.getElementById('modal-msg');
+    btn.disabled=true; btn.textContent='Guardando…';
+    try{
+      const res=await fetch(`${API}/api/proyectos/${proyectoEnModal.id}/estado`,{
+        method:'PUT',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({estado:nuevoEstado}),
+      });
+      const data=await res.json();
+      if(!res.ok){
+        mostrarMsgModal(data.error||'Error desconocido','error');
+      }else{
+        mostrarMsgModal(`${data.estado_anterior} → ${data.estado_nuevo}`,'ok');
+        toast(`Proyecto ${proyectoEnModal.codigo_seguimiento} actualizado`,'ok');
+        setTimeout(()=>{
+          cerrarModal();
+          cargarProyectos(document.getElementById('filtro-estado').value);
+        },1200);
+      }
+    }catch{mostrarMsgModal('Sin conexión con la API.','error');}
+    finally{btn.disabled=false;btn.textContent='Confirmar Cambio';}
+  }
+  function mostrarMsgModal(t,tipo){
+    const el=document.getElementById('modal-msg');
+    el.textContent=t;
+    el.style.color=tipo==='ok'?'#00C48C':'#FB7185';
+    el.style.background=tipo==='ok'?'#004D38':'#5C1828';
+    el.classList.remove('hidden');
+  }
+
+  // Toast
+  let toastTimer;
+  function toast(msg,tipo='ok'){
+    const el=document.getElementById('toast');
+    const icon=document.getElementById('toast-icon');
+    document.getElementById('toast-msg').textContent=msg;
+    icon.setAttribute('data-lucide',tipo==='ok'?'check-circle-2':'alert-circle');
+    el.style.borderColor=tipo==='ok'?'#00C48C':'#FB7185';
+    icon.style.color=tipo==='ok'?'#00C48C':'#FB7185';
+    el.classList.remove('hidden');
+    lucide.createIcons();
+    clearTimeout(toastTimer);
+    toastTimer=setTimeout(()=>el.classList.add('hidden'),3500);
+  }
+
+  // Correos simulados
+  const EMAILS=[
+    {remitente:'Dra. Patricia Gómez <p.gomez@cavelier-abogados.com.co>',cliente_id:1,
+     body:`Estimado equipo de Gestor Lingüístico,
+
+Espero que se encuentren bien. Les escribo para solicitar con carácter URGENTE la traducción de un contrato bilateral de compraventa de acciones.
+
+El documento tiene aproximadamente 12.500 palabras y debe entregarse en un máximo de 5 días hábiles. Es un servicio de traducción jurídica del español al inglés (ES→EN).
+
+Dado el volumen, estimamos un costo total de USD $1.125,00 según nuestra tarifa acordada de $0,09 por palabra.
+
+Deadline: ${new Date(Date.now()+5*24*3600e3).toISOString().slice(0,16)}
+
+Quedo atenta a su confirmación.
+
+Patricia Gómez
+Socia Senior — Cavelier Abogados S.A.S.`},
+    {remitente:'Diego Ramírez <d.ramirez@lafrancol.com.co>',cliente_id:2,
+     body:`Buenos días,
+
+Necesitamos traducción técnica de la ficha técnica de nuestro nuevo producto farmacéutico Lafraxol 500mg. El texto es de 3.200 palabras, del español al portugués (ES→PT).
+
+Es una traducción técnica estándar. Tarifa acordada: $0,07/palabra = USD $224,00.
+
+Pueden tomar hasta 10 días para la entrega.
+
+Deadline: ${new Date(Date.now()+10*24*3600e3).toISOString().slice(0,16)}
+
+Gracias,
+Diego Ramírez
+Coord. de Asuntos Regulatorios — Lafrancol`},
+    {remitente:'Luisa Fernanda Ríos <lf.rios@alianzaporlapaz.org>',cliente_id:3,
+     body:`Hola equipo,
+
+Les contactamos para contratar un servicio de interpretación simultánea ES↔FR para nuestro Congreso Regional de Paz.
+
+La sesión tiene una duración de 6 horas. Costo total: USD $390,00 (tarifa $65/h).
+
+Deadline: ${new Date(Date.now()+21*24*3600e3).toISOString().slice(0,16)}
+
+Por favor confirmar disponibilidad.
+
+Luisa Fernanda Ríos
+Coordinadora — Fundación Alianza por la Paz`},
+  ];
+  let emailActivo=0;
+
+  function seleccionarEmail(idx){
+    emailActivo=idx;
+    document.querySelectorAll('.email-card').forEach((el,i)=>el.classList.toggle('active',i===idx));
+    document.getElementById('email-body').textContent=EMAILS[idx].body;
+    limpiarFormulario();
+  }
+  seleccionarEmail(0);
+
+  // Procesar con IA
+  async function procesarConIA(){
+    const btn=document.getElementById('btn-ia');
+    const thinking=document.getElementById('ia-thinking');
+    btn.disabled=true; btn.classList.add('opacity-50'); thinking.classList.remove('hidden');
+    const email=EMAILS[emailActivo];
+    const prompt=`Eres un asistente de operaciones para una empresa de servicios lingüísticos en Colombia.
+Extrae los datos del siguiente correo y responde ÚNICAMENTE con un objeto JSON válido (sin texto adicional, sin backticks) con estos campos:
+{"cliente_id":${email.cliente_id},"servicio":"<string>","idioma":"<string ES→EN>","volumen":<número>,"costo_total":<decimal USD>,"deadline":"<YYYY-MM-DDTHH:MM>"}
+
+CORREO:
+---
+${email.body}
+---`;
+    try{
+      const res=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]}),
+      });
+      const data=await res.json();
+      const texto=data.content?.find(b=>b.type==='text')?.text||'{}';
+      const parsed=JSON.parse(texto.replace(/```json|```/g,'').trim());
+      rellenarFormulario(parsed);
+      toast('IA extrajo los datos correctamente','ok');
+    }catch(err){
+      rellenarFormulario({
+        cliente_id:email.cliente_id,
+        servicio:inferirServicio(email.body),
+        idioma:inferirIdioma(email.body),
+        volumen:inferirVolumen(email.body),
+        costo_total:inferirCosto(email.body),
+        deadline:inferirDeadline(email.body),
+      });
+      toast('Extracción local (fallback)','ok');
+    }finally{
+      btn.disabled=false; btn.classList.remove('opacity-50'); thinking.classList.add('hidden');
+    }
+  }
+
+  function inferirServicio(b){
+    if(/interpretaci[oó]n simult[aá]nea/i.test(b))return'Interpretación Simultánea';
+    if(/interpretaci[oó]n/i.test(b))return'Interpretación';
+    if(/traducci[oó]n jur[ií]dica/i.test(b))return'Traducción Jurídica';
+    if(/traducci[oó]n t[eé]cnica/i.test(b))return'Traducción Técnica';
+    return'Traducción';
+  }
+  function inferirIdioma(b){const m=b.match(/([A-Z]{2}[→↔][A-Z]{2}(?:[→↔][A-Z]{2})*)/);return m?m[1]:'ES→EN';}
+  function inferirVolumen(b){
+    const p=b.match(/([\d.,]+)\s*palabras/i);if(p)return parseFloat(p[1].replace(',',''));
+    const h=b.match(/([\d.,]+)\s*horas/i);if(h)return parseFloat(h[1].replace(',',''));
+    return null;
+  }
+  function inferirCosto(b){const m=b.match(/USD\s*\$?([\d.,]+)/i);return m?parseFloat(m[1].replace(',','')):null;}
+  function inferirDeadline(b){const m=b.match(/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/);return m?m[1]:null;}
+
+  function rellenarFormulario(datos){
+    const campos={'f-cliente':datos.cliente_id,'f-servicio':datos.servicio,'f-idioma':datos.idioma,'f-volumen':datos.volumen,'f-costo':datos.costo_total,'f-deadline':datos.deadline};
+    Object.entries(campos).forEach(([id,val])=>{
+      const el=document.getElementById(id);
+      if(val!=null){el.value=val;el.classList.add('filled');}
+    });
+    document.getElementById('form-status').classList.remove('hidden');
+    const btn=document.getElementById('btn-registrar');
+    btn.disabled=false; btn.style.borderColor='#00C48C'; btn.style.color='#00C48C';
+  }
+
+  function limpiarFormulario(){
+    ['f-cliente','f-servicio','f-idioma','f-volumen','f-costo','f-deadline'].forEach(id=>{
+      const el=document.getElementById(id);el.value='';el.classList.remove('filled');
+    });
+    document.getElementById('form-status').classList.add('hidden');
+    document.getElementById('registro-msg').classList.add('hidden');
+    const btn=document.getElementById('btn-registrar');
+    btn.disabled=true; btn.style.borderColor='#1E2738'; btn.style.color='#5A6A8A';
+  }
+
+  async function registrarProyecto(){
+    const btn=document.getElementById('btn-registrar');
+    const msgEl=document.getElementById('registro-msg');
+    const payload={
+      cliente_id:parseInt(document.getElementById('f-cliente').value)||null,
+      servicio:document.getElementById('f-servicio').value,
+      idioma:document.getElementById('f-idioma').value,
+      volumen:parseFloat(document.getElementById('f-volumen').value)||null,
+      costo_total:parseFloat(document.getElementById('f-costo').value)||null,
+      deadline:document.getElementById('f-deadline').value||null,
+    };
+    if(!payload.cliente_id||!payload.servicio||!payload.idioma){
+      msgEl.textContent='Cliente, Servicio e Idioma son obligatorios.';
+      msgEl.style.color='#FB7185'; msgEl.style.background='#5C1828';
+      msgEl.classList.remove('hidden'); return;
+    }
+    btn.disabled=true; btn.textContent='Registrando…';
+    try{
+      const res=await fetch(`${API}/api/proyectos`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const data=await res.json();
+      if(!res.ok){
+        msgEl.textContent=data.error||'Error al registrar.';
+        msgEl.style.color='#FB7185'; msgEl.style.background='#5C1828';
+        msgEl.classList.remove('hidden');
+      }else{
+        msgEl.textContent=`✓ Proyecto ${data.proyecto.codigo_seguimiento} registrado.`;
+        msgEl.style.color='#00C48C'; msgEl.style.background='#004D38';
+        msgEl.classList.remove('hidden');
+        toast(`Nuevo proyecto ${data.proyecto.codigo_seguimiento} creado`,'ok');
+        limpiarFormulario();
+        cargarProyectos(document.getElementById('filtro-estado').value);
+      }
+    }catch{
+      msgEl.textContent='Sin conexión con la API.';
+      msgEl.style.color='#FB7185'; msgEl.style.background='#5C1828';
+      msgEl.classList.remove('hidden');
+    }finally{btn.disabled=false;btn.textContent='Registrar Proyecto en BD';}
+  }
+
+  // ── Tema claro/oscuro ────────────────────────────────────────────────────────
+  function aplicarTema(tema) {
+    const esClaro = tema === 'light';
+    document.body.classList.toggle('light', esClaro);
+    const icon  = document.getElementById('tema-icon');
+    const label = document.getElementById('tema-label');
+    if (icon)  icon.setAttribute('data-lucide', esClaro ? 'sun' : 'moon');
+    if (label) label.textContent = esClaro ? 'Oscuro' : 'Claro';
+    lucide.createIcons();
+    localStorage.setItem('gl-tema', tema);
+  }
+
+  function toggleTema() {
+    const actual = document.body.classList.contains('light') ? 'light' : 'dark';
+    aplicarTema(actual === 'light' ? 'dark' : 'light');
+  }
+
+  // Restaurar preferencia guardada
+  const temaGuardado = localStorage.getItem('gl-tema') || 'dark';
+  aplicarTema(temaGuardado);
+
+  // Init
+  lucide.createIcons();
+  cargarProyectos();
+  setInterval(()=>cargarProyectos(document.getElementById('filtro-estado').value),60000);
+  </script>
+</body>
+</html>
