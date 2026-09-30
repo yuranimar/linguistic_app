@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: linguistic_app
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=development
+      - DATABASE_URL=sqlite:///linguistic_mvp.db
+      - SECRET_KEY=dev-secret-change-in-production
+    volumes:
+      - .:/app
+    command: flask run --host=0.0.0.0
