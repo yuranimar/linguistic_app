@@ -9,7 +9,7 @@ Crea todas las tablas y el usuario administrador por defecto.
 
 from app import create_app
 from extensions import db
-from models import Cliente, Linguista, Proyecto, Usuario  # noqa: F401
+from models import Cliente, Linguista, Proyecto, Usuario, EstadoUsuario  # noqa: F401
 
 app = create_app()
 
@@ -20,10 +20,10 @@ with app.app_context():
     # Crear usuario admin si no existe
     if not Usuario.query.filter_by(email="admin@gestor.co").first():
         admin = Usuario(
-            nombre = "Administrador",
-            email  = "admin@gestor.co",
-            rol    = "admin",
-            activo = True,
+            nombre="Administrador",
+            email="admin@gestor.co",
+            rol="admin",
+            estado=EstadoUsuario.ACTIVO,
         )
         admin.set_password("admin123")
         db.session.add(admin)
@@ -35,5 +35,4 @@ with app.app_context():
     else:
         print("ℹ️   Usuario admin ya existe, no se recreó.")
 
-    print("\n    Archivo SQLite: instance/linguistic_mvp.db")
-    print("    Accede en:      http://localhost:5000/login")
+    print("\n    Base de datos inicializada correctamente.")
