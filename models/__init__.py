@@ -29,7 +29,7 @@ class EstadoProyecto(str, enum.Enum):
     CANCELADO     = "cancelado"      # Proyecto anulado
 
 
-# ── Modelo: Cliente ───────────────────────────────────────────────────────────
+# ── Modelo: Cliente ─────────────────────────────────────────────────────────[...]
 class Cliente(db.Model):
     """Representa a un cliente de la empresa de servicios lingüísticos."""
 
@@ -64,7 +64,7 @@ class Cliente(db.Model):
         return f"<Cliente id={self.id} nombre='{self.nombre}'>"
 
 
-# ── Modelo: Linguista ─────────────────────────────────────────────────────────
+# ── Modelo: Linguista ────────────────────────────────────────────────────────…[...]
 class Linguista(db.Model):
     """Representa a un lingüista (traductor o intérprete) del equipo."""
 
@@ -100,7 +100,7 @@ class Linguista(db.Model):
         return f"<Linguista id={self.id} nombre='{self.nombre}'>"
 
 
-# ── Modelo: Proyecto ──────────────────────────────────────────────────────────
+# ── Modelo: Proyecto ────────────────────────────────────────────────────────…[...]
 class Proyecto(db.Model):
     """
     Núcleo operativo: representa un encargo de traducción o interpretación.
@@ -125,11 +125,11 @@ class Proyecto(db.Model):
         default=lambda: uuid.uuid4().hex[:10].upper(),  # ej. "A3F9D12C1E"
     )
 
-    # ── Claves foráneas ───────────────────────────────────────────────────────
-    cliente_id   = db.Column(db.Integer, db.ForeignKey("clientes.id"),  nullable=False)
-    linguista_id = db.Column(db.Integer, db.ForeignKey("linguistas.id"), nullable=True)
+    # ── Claves foráneas (con índices para mejorar performance en filtros y joins) ─
+    cliente_id   = db.Column(db.Integer, db.ForeignKey("clientes.id"),  nullable=False, index=True)
+    linguista_id = db.Column(db.Integer, db.ForeignKey("linguistas.id"), nullable=True, index=True)
 
-    # ── Relaciones ORM ────────────────────────────────────────────────────────
+    # ── Relaciones ORM ───────────────────────────────────────────────────────…[...]
     cliente   = db.relationship("Cliente",   back_populates="proyectos")
     linguista = db.relationship("Linguista", back_populates="proyectos")
 
@@ -147,7 +147,7 @@ class Proyecto(db.Model):
         default=EstadoProyecto.RECIBIDO,
     )
 
-    # ── Timestamps ────────────────────────────────────────────────────────────
+    # ── Timestamps ─────────────────────────────────────────────────────────[...]
     creado_en      = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     actualizado_en = db.Column(
         db.DateTime,
@@ -175,7 +175,7 @@ class Proyecto(db.Model):
         return f"<Proyecto id={self.id} codigo='{self.codigo_seguimiento}' estado='{self.estado}'>"
 
 
-# ── Modelo: Usuario ───────────────────────────────────────────────────────────
+# ── Modelo: Usuario ────────────────────────────────────────────────────────…[...]
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 
