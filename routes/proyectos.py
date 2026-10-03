@@ -9,8 +9,10 @@ Rutas expuestas:
 """
 
 from datetime import datetime
+
 from flask import Blueprint, request, jsonify
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 
 from extensions import db
 from models import Proyecto, Cliente, Linguista, EstadoProyecto
@@ -98,7 +100,7 @@ def crear_proyecto():
     }), 201
 
 
-# ── GET /api/proyectos ────────────────────────────────────────────────────────
+# ── GET /api/proyectos ───────────────────────────────────────────────────────
 @proyectos_bp.get("/proyectos")
 def listar_proyectos():
     """
@@ -115,13 +117,16 @@ def listar_proyectos():
     cliente_id    = request.args.get("cliente_id", type=int)
     linguista_id  = request.args.get("linguista_id", type=int)
 
-    # ── Paginación ────────────────────────────────────────────────────────────
+    # ── Paginación ────────────────────────────────────────────────────────
     page       = request.args.get("page", 1, type=int)
     por_pagina = request.args.get("por_pagina", 20, type=int)
     por_pagina = min(por_pagina, 100)  # límite máximo para evitar consultas masivas
 
     # ── Construcción de la query ──────────────────────────────────────────────
-    query = Proyecto.query.order_by(Proyecto.creado_en.desc())
+    query = Proyecto.query.options(
+        joinedload(Proyecto.cliente),
+        joinedload(Proyecto.linguista),
+    ).order_by(Proyecto.creado_en.desc())
 
     if estado_param:
         try:
